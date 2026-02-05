@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-LABEL maintainer="Galaxy Community"
+LABEL maintainer="Saim Momin <momins@informatik.uni-freiburg.de>"
 LABEL description="Interactive Dot plot viewer for comparative genomics"
 
 # Install system dependencies
