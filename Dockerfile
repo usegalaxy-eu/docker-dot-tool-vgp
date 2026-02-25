@@ -15,7 +15,7 @@ RUN apt-get update && \
 WORKDIR /opt
 
 # Clone the Dot repository
-RUN git clone https://github.com/marianattestad/dot.git /opt/dot
+RUN git clone https://github.com/SaimMomin12/galaxy-interactive-tool-dot.git /opt/dot
 
 # Make data directory
 RUN mkdir -p /data
@@ -28,5 +28,4 @@ COPY startup.sh /startup.sh
 RUN chmod +x /startup.sh
 
 EXPOSE 8080
-
 CMD ["/startup.sh"]
