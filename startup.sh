@@ -1,21 +1,36 @@
 #!/bin/bash
+set -e
 
-# Symlink staged inputs so the web server can serve them via URL
+# Serve staged inputs
 ln -s /home/inputs /opt/dot/inputs
 
-# Build URL parameters
-COORDS_PARAM="?coords=inputs/input.coords&index=inputs/input.coords.idx"
-ANNOTATION_PARAM=""
+# Create JS that auto-loads container files via HTTP
+cat > /opt/dot/galaxy_autoload.js <<'EOF'
+(function () {
+  if (window.location.search && window.location.search.length > 1) return;
 
-if [ -f /home/inputs/annotation.bed ]; then
-    ANNOTATION_PARAM="&annotations=inputs/annotation.bed"
-fi
+  function abs(rel) {
+    return new URL(rel, window.location.href).href;
+  }
 
-URL_SUFFIX="${COORDS_PARAM}${ANNOTATION_PARAM}"
+  var params = new URLSearchParams();
+  params.set("coords", abs("inputs/input.coords"));
+  params.set("index", abs("inputs/input.coords.idx"));
 
-# Inject auto-redirect into index.html (only redirects if no params already in URL)
-sed -i "s|<script type=\"text/javascript\">|<script type=\"text/javascript\">\n\t\tif (!window.location.search) { window.location.search = '${URL_SUFFIX}'; }|" /opt/dot/index.html
+  // Optional annotation: try HEAD to see if it exists
+  var ann = abs("inputs/annotation.bed");
+  fetch(ann, { method: "HEAD" })
+    .then(function (r) { if (r.ok) params.append("annotations", ann); })
+    .catch(function () {})
+    .finally(function () { window.location.search = "?" + params.toString(); });
+})();
+EOF
 
-# Start the web server
+# Include it before </body>
+sed -i 's|</body>|<script src="galaxy_autoload.js"></script>\n</body>|' /opt/dot/index.html
+
+# (Optional) hide the Inputs tab/page so users don’t see local picker
+sed -i 's|</head>|<style>#first_tab,#first{display:none!important;}</style>\n</head>|' /opt/dot/index.html
+
 cd /opt/dot
 python3 -m http.server 8080
